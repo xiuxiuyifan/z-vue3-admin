@@ -10,6 +10,15 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      '/dev-api': {
+        target: 'http://boot3.jeecg.com/jeecgboot',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/dev-api/, '')
+      }
+    }
+  },
   plugins: [
     vue(),
     vueJsx(),

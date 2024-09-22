@@ -1,11 +1,14 @@
 <script lang="ts" setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { getRandomImage } from '@/api/user'
+import type { LoginParams } from '@/api/userModel'
+import { useUserStore } from '@/stores/modules/user'
+import { ref, computed, onMounted, unref } from 'vue'
 
 // 数据源
-const loginForm = ref({
-  username: 'super-admin',
-  password: '123456'
+const loginForm = ref<LoginParams>({
+  username: 'jeecg',
+  password: 'jeecg#123456',
+  captcha: ''
 })
 // 验证规则
 const loginRules = ref({
@@ -21,7 +24,14 @@ const loginRules = ref({
   password: [
     {
       required: true,
-      trigger: 'blur'
+      trigger: 'blur',
+      validator: (rule: any, value: any, callback: any) => {
+        if (value.length < 6) {
+          callback(new Error('密码不能少于6位'))
+        } else {
+          callback()
+        }
+      }
     }
   ]
 })
@@ -39,8 +49,23 @@ const onChangePwdType = () => {
 // 登录动作处理
 const loading = ref(false)
 const loginFromRef = ref(null)
-// const router = useRouter()
-const handleLogin = () => {}
+
+const { login } = useUserStore()
+const handleLogin = () => {
+  console.log('hihihi')
+  login(unref(loginForm))
+}
+
+// 获取随机生成的图片
+const randomImageSrc = ref<any>('')
+const requestRandomImage = () => {
+  getRandomImage().then((res) => {
+    randomImageSrc.value = res
+  })
+}
+onMounted(() => {
+  requestRandomImage()
+})
 </script>
 
 <template>
@@ -76,6 +101,24 @@ const handleLogin = () => {}
         </span>
       </el-form-item>
 
+      <el-form-item>
+        <el-input
+          v-model="loginForm.captcha"
+          placeholder="验证码"
+          style="width: 100%; position: relative"
+        >
+          <template #suffix>
+            <img
+              class="q-code"
+              :src="randomImageSrc"
+              alt=""
+              srcset=""
+              @click="requestRandomImage"
+            />
+          </template>
+        </el-input>
+      </el-form-item>
+
       <el-button
         type="primary"
         style="width: 100%; margin-bottom: 30px"
@@ -83,22 +126,20 @@ const handleLogin = () => {}
         @click="handleLogin"
         >登录</el-button
       >
-
-      <div class="tips"></div>
     </el-form>
   </div>
 </template>
 
-<style lang="less" scoped>
-@bg: #2d3a4b;
-@dark_gray: #889aa4;
-@light_gray: #eee;
-@cursor: #fff;
+<style lang="scss" scoped>
+$bg: #2d3a4b;
+$dark_gray: #889aa4;
+$light_gray: #eee;
+$cursor: #fff;
 
 .login-container {
   min-height: 100%;
   width: 100%;
-  background-color: @bg;
+  background-color: $bg;
   overflow: hidden;
 
   .login-form {
@@ -124,6 +165,7 @@ const handleLogin = () => {}
         background: unset;
         border: 0;
         box-shadow: none;
+        width: 100%;
       }
       input {
         background: transparent;
@@ -131,10 +173,17 @@ const handleLogin = () => {}
         -webkit-appearance: none;
         border-radius: 0px;
         padding: 12px 5px 12px 15px;
-        color: @light_gray;
+        color: $light_gray;
         height: 47px;
-        caret-color: @cursor;
+        caret-color: $cursor;
       }
+    }
+    .q-code {
+      width: 115px;
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      cursor: pointer;
     }
   }
 
@@ -153,7 +202,7 @@ const handleLogin = () => {}
 
   .svg-container {
     padding: 6px 5px 6px 15px;
-    color: @dark_gray;
+    color: $dark_gray;
     vertical-align: middle;
     display: inline-block;
   }
@@ -163,7 +212,7 @@ const handleLogin = () => {}
 
     .title {
       font-size: 26px;
-      color: @light_gray;
+      color: $light_gray;
       margin: 0px auto 40px auto;
       text-align: center;
       font-weight: bold;
@@ -184,9 +233,8 @@ const handleLogin = () => {}
   .show-pwd {
     position: absolute;
     right: 10px;
-    top: 7px;
     font-size: 16px;
-    color: @dark_gray;
+    color: $dark_gray;
     cursor: pointer;
     user-select: none;
   }
